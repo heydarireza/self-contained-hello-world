@@ -1,0 +1,10 @@
+timezone: Europe/Berlin
+apt_packages:
+  - ntp
+  - htop
+  - iftop
+  - net-tools
+
+stack_name: 'SimpleSite'
+docker_image: 'SimpleSite-webservice'
+docker_image_version: 'dev'

@@ -1,0 +1,11 @@
+all:
+  hosts:
+  children:
+    musicPlatform:
+      hosts:
+        ServerIp:
+          ansible_connection: ssh
+          ansible_user: root
+          ansible_become_pass: "reza"
+          ansible_python_interpreter: /usr/bin/python3
+          ansible_become_method: su

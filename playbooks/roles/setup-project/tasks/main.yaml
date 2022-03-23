@@ -1,0 +1,63 @@
+---
+
+- name: Create a directory for project root
+  file:
+    path: "/home/{{stack_name}}"
+    state: directory
+    mode: 0755
+  become: yes
+  tags: [setup-project]
+
+
+- name: Copy file with owner and permissions
+  template:
+    src: '{{item}}'
+    dest: "/home/{{stack_name}}/"
+    mode: 0644
+  loop:
+    - ../default.conf
+    - ../Dockerfile
+    - ../index.html
+  become: yes
+  tags: [setup-project]
+
+- name: build container image
+  docker_image:
+    name: "{{docker_image}}:{{docker_image_version}}"
+    build:
+      path: /home/SpreadGroup
+    source: build
+    state: present
+  tags: [setup-project]
+
+
+- name: Copy file with owner and permissions
+  template:
+    src: docker-compose.yaml.j2
+    dest: "/home/{{stack_name}}/docker-compose.yaml"
+    mode: 0644
+  become: yes
+  tags: [setup-project]
+
+
+- name: Init a new swarm with default parameters
+  docker_swarm:
+    state: present
+  become: true
+  tags: [setup-project]
+
+
+
+
+
+- name: Run or Update docker swarm stack
+  docker_stack:
+    state: present
+    name: "{{ stack_name }}"
+    compose:
+      - "/home/{{stack_name}}/docker-compose.yaml"
+    with_registry_auth: yes
+    prune: yes
+  register: output
+  become: true
+  tags: [setup-project]

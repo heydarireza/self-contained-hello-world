@@ -1,0 +1,33 @@
+- name: os init tasks
+  hosts: all
+  gather_facts: true
+  roles:
+    - os-init
+    - geerlingguy.ntp
+  tags: [server-update]
+
+- name: config docker and docker compose
+  hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - role: geerlingguy.docker
+  tags: [config-docker]
+
+- name: setup the project
+  hosts: all
+  gather_facts: true
+  roles:
+    - setup-project
+  become: yes
+  tags: [setup-project]
+
+
+
+- name: cleanup the project
+  hosts: all
+  gather_facts: true
+  roles:
+    - cleanup
+  become: yes
+  tags: [cleanup]

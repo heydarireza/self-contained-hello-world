@@ -1,0 +1,73 @@
+version: "3.8"
+
+networks:
+  web_network:
+
+services:
+
+  web_service:
+    image: "{{docker_image}}:{{docker_image_version}}"
+    networks:
+      - web_network
+    environment:
+      SERVER: 'dev'
+    healthcheck:
+      interval: 1m30s
+      timeout: 10s
+      retries: 20
+      start_period: 5m
+    deploy:
+      mode: replicated
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+        window: 120s
+      labels:
+        # Explicitly tell Traefik to expose this container
+        - "traefik.enable=true"
+        # The domain the service will respond to
+        - "traefik.http.routers.web_service.rule=PathPrefix(`/`)"
+        - "traefik.http.services.web_service.loadbalancer.server.port=80"
+
+
+
+
+  ### API Gateway (traefik) #############################################
+  traefik:
+    image: traefik:latest # The official v2 Traefik docker image
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - web_network
+    environment:
+      - TZ=Europe/Berlin
+    command:
+      - --providers.docker=true
+      - --entryPoints.web.address=:80
+      - --api.insecure=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.watch=true
+      - --providers.docker.swarmMode=true
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=web_network"
+        - "traefik.docker.lbswarm=true"

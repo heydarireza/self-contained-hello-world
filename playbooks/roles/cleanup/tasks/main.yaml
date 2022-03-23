@@ -1,0 +1,27 @@
+---
+- name: Nodes Leaving the Swarm
+  shell: docker swarm leave -f
+  ignore_errors: true
+  tags: [cleanup]
+
+- name: Clean up docker dangling async
+  become: true
+  docker_prune:
+    containers: yes
+    images: yes
+    builder_cache: yes
+    networks: yes
+    volumes: yes
+  register: async_results
+  async: 1000
+  poll: 0
+  tags: [cleanup]
+
+- name: Check Clean up docker dangling status
+  async_status:
+    jid: "{{ async_results.ansible_job_id }}"
+  register: async_poll_results
+  until: async_poll_results.finished
+  retries: 100
+  delay: 60
+  tags: [cleanup]
